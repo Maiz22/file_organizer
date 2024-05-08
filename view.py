@@ -4,7 +4,7 @@ from tkinter import filedialog
 
 
 class View(tk.Tk):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.title("Organizer")
         self.resizable(False, False)
@@ -33,64 +33,64 @@ class View(tk.Tk):
         self.execute.grid_all(row=6)
         self.create_check_button()
 
-    def cleanup_btn_on_click(self, callback):
+    def cleanup_btn_on_click(self, callback) -> None:
          self.cleanup.button.bind("<Button-1>", callback)
 
-    def documents_btn_on_click(self, callback):
+    def documents_btn_on_click(self, callback) -> None:
          self.documents.button.bind("<Button-1>", callback) 
 
-    def pictures_btn_on_click(self, callback):
+    def pictures_btn_on_click(self, callback) -> None:
          self.pictures.button.bind("<Button-1>", callback)
 
-    def videos_btn_on_click(self, callback):
+    def videos_btn_on_click(self, callback) -> None:
          self.videos.button.bind("<Button-1>", callback)
 
-    def music_btn_on_click(self, callback):
+    def music_btn_on_click(self, callback) -> None:
          self.music.button.bind("<Button-1>", callback)
 
-    def execute_btn_on_click(self, callback):
+    def execute_btn_on_click(self, callback) -> None:
         self.execute.button.bind("<Button-1>", callback)
 
-    def move_btn_on_click(self, callback):
+    def move_btn_on_click(self, callback) -> None:
         self.move_button.bind("<Button-1>", callback)
 
-    def check_btn_on_click(self, callback):
+    def check_btn_on_click(self, callback) -> None:
          self.check_btn.bind("<Button-1>", callback)
       
     @staticmethod
-    def set_dir(name=None):
+    def set_dir(name=None) -> str:
         if name:
             return filedialog.askdirectory(title=f"Set {name} directory")
         return filedialog.askdirectory()
     
-    def display_results(self, label, amount, row, path):
+    def display_results(self, label, amount, row, path) -> None:
         widget = DisplayOccurancesWidget(root=self.bottom_frame, label=label, amount=amount, path=path)
         widget.grid_all(row=row)
 
-    def create_check_button(self):
+    def create_check_button(self) -> None:
         self.check_btn = ttk.Button(self.bottom_frame, text="check")
         self.check_btn.grid(row=0, column=0, padx=5, pady=5)
 
-    def create_move_button(self, row):
+    def create_move_button(self, row) -> None:
         self.move_button = ttk.Button(self.bottom_frame, text="move")
         self.move_button.grid(row=row, column=0, padx=5, pady=5)
     
 
 class SelectPathWidget():
-    def __init__(self, root, label, directory):
+    def __init__(self, root, label, directory) -> None:
         self.label = ttk.Label(root, text=label, width=15)
         self.dir = ttk.Label(root, text=directory)
         self.button = ttk.Button(root, text="edit")
 
-    def grid_all(self, row):
+    def grid_all(self, row) -> None:
         self.label.grid(row=row, column=0, padx=5, pady=5, sticky="w")
         self.dir.grid(row=row, column=1, padx=5, pady=5, sticky="w")
         self.button.grid(row=row, column=2, padx=5, pady=5, sticky="w")
 
 class DisplayOccurancesWidget():
-    def __init__(self, root, label, amount, path):
+    def __init__(self, root, label, amount, path) -> None:
         text = f"Found {amount} {label} in {path}"
         self.label = ttk.Label(root, text=text)
 
-    def grid_all(self, row):
+    def grid_all(self, row) -> None:
         self.label.grid(row=row, column=0, padx=5, pady=5, sticky="w")

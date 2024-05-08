@@ -4,7 +4,7 @@ import json
 
 
 class Model():
-    def __init__(self):
+    def __init__(self) -> None:
         self.dir = 'userdata'
         self.file = 'data.json'
         self.path = os.path.join(self.dir, self.file)
@@ -31,8 +31,3 @@ class Model():
                 data[name] = path
                 with open(self.path, 'w') as json_file:
                     json_file.write(json.dumps(data, indent=4))
-
-
-
-if __name__ == "__main__":
-    model = Model()

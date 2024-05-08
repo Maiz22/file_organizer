@@ -6,7 +6,7 @@ import os
 
 
 class Controller():
-    def __init__(self, view: View, model: Model):
+    def __init__(self, view: View, model: Model) -> None:
         self.view = view
         self.model = model
         self.init_dirs()
@@ -14,7 +14,7 @@ class Controller():
         self.init_check_bind()
         self.create_data_categories()
 
-    def init_binds_on_view(self):
+    def init_binds_on_view(self) -> None:
         """
         Initiate all button bindings in the view.
         """
@@ -25,19 +25,19 @@ class Controller():
         self.view.music_btn_on_click(lambda event, name="music", view_element=self.view.music: self.save_dir(event, name, view_element))
         self.view.execute_btn_on_click(lambda event, name="execute", view_element=self.view.execute: self.save_dir(event, name, view_element))
         
-    def init_check_bind(self):
+    def init_check_bind(self) -> None:
         """
         Bind the views check button.
         """
         self.view.check_btn_on_click(self.analyze_data)
 
-    def init_move_bind(self):
+    def init_move_bind(self) -> None:
         """
         Bind the views move button.
         """
         self.view.move_btn_on_click(self.move_data)
     
-    def init_dirs(self):
+    def init_dirs(self) -> None:
         """
         Set the directories in the view to the once that have been saved
         in the userdata json file.
@@ -49,7 +49,7 @@ class Controller():
         self.view.music.dir.configure(text=self.model.get_path("music"))
         self.view.execute.dir.configure(text=self.model.get_path("execute"))
 
-    def create_data_categories(self):
+    def create_data_categories(self) -> None:
         """
         Create data type category instances with name and corresponding
         endings.
@@ -61,7 +61,7 @@ class Controller():
         self.execute = DataTypeCategory(name="executables", endings=set(["exe", "bat", "cmd", "com", "msi", "jar", "js"]))
         self.other = DataTypeCategory(name="other", endings=None)
 
-    def save_dir(self, event, name, view_element):
+    def save_dir(self, event, name, view_element) -> None:
         """
         Safe a path for the selected categgory to the user data json.
         """
@@ -70,7 +70,7 @@ class Controller():
             view_element.dir.configure(text=path)
             self.model.save_path(name=name, path=path)
 
-    def analyze_data(self, event):
+    def analyze_data(self, event) -> None:
         """
         Analize the data in the cleanup path.
         """
@@ -83,7 +83,7 @@ class Controller():
         else:
             self.save_dir(event, name="cleanup", view_element=self.view.cleanup)
 
-    def display_findings(self):
+    def display_findings(self) -> None:
         """
         Show all findings from the cleanup path.
         """
@@ -99,7 +99,7 @@ class Controller():
             #if no element has been found
             self.view.display_results(label="elements", amount=0, row=row, path=self.model.get_path("cleanup"))
 
-    def move_data(self, event):
+    def move_data(self, event) -> None:
         """
         Move the data from cleanup dir to the selected dirs depending
         on its data category.
@@ -131,7 +131,7 @@ class Controller():
                 self.save_dir(event, name="execute", view_element=self.view.execute)
         self.update_bottom_view(event)
 
-    def update_bottom_view(self, event):
+    def update_bottom_view(self, event) -> None:
         """
         Update the view displaying the data check results.
         """
@@ -141,7 +141,7 @@ class Controller():
             self.view.create_check_button()
             self.init_check_bind()
 
-    def sort_data(self, data):
+    def sort_data(self, data) -> None:
         """
         Sort the found data by data category ending and add it to 
         the corresponding data category list.
@@ -153,14 +153,14 @@ class Controller():
                 data_category.list.append(datatype)
             else: self.other.list.append(datatype)
 
-    def clear_data(self):
+    def clear_data(self) -> None:
         """
         Clear all lists of the data category instances.
         """
         for data in [self.pictures, self.documents, self.videos, self.music, self.execute, self.other]:
             data.list = []
         
-    def run(self):
+    def run(self) -> None:
         """
         Start the view mainloop.
         """
