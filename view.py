@@ -1,96 +1,68 @@
-import tkinter as tk
-from tkinter import ttk
+import ttkbootstrap as tb
+from ttkbootstrap import tooltip
+from widgets.select_opiton import SelectOption
+from widgets.setup_option import SetupOptionPopup
+from widgets.result_widget import ResultWidget
 from tkinter import filedialog
 
 
-class View(tk.Tk):
+class View(tb.Window):
     def __init__(self) -> None:
-        super().__init__()
-        self.title("Organizer")
+        super().__init__(themename="darkly")
+        self.title("FileOrganizer")
         self.resizable(False, False)
-        self.top_frame = ttk.Frame(self)
-        self.top_frame.pack(padx=10, pady=10)
-        self.seperator_1 = ttk.Separator(self)
-        self.seperator_1.pack(fill="x")
-        self.mid_frame = ttk.Frame(self)
-        self.mid_frame.pack(padx=10, pady=5)
-        self.seperator_2 = ttk.Separator(self)
-        self.seperator_2.pack(fill="x")
-        self.bottom_frame = ttk.Frame(self)
-        self.bottom_frame.pack(padx=10, pady=5)
+        self.base_path_frame = tb.Frame(self)
+        self.base_path_frame.pack(padx=5, pady=5)
 
-        self.cleanup = SelectPathWidget(root=self.top_frame, label="Cleanup", directory="")
-        self.cleanup.grid_all(row=0)
-        self.documents = SelectPathWidget(root=self.mid_frame, label="Documents", directory="")
-        self.documents.grid_all(row=2)
-        self.pictures = SelectPathWidget(root=self.mid_frame, label="Pictures", directory="")
-        self.pictures.grid_all(row=3)
-        self.videos = SelectPathWidget(root=self.mid_frame, label="Videos", directory="")
-        self.videos.grid_all(row=4)
-        self.music = SelectPathWidget(root=self.mid_frame, label="Music", directory="")
-        self.music.grid_all(row=5)
-        self.execute = SelectPathWidget(root=self.mid_frame, label="Executable", directory="")
-        self.execute.grid_all(row=6)
-        self.create_check_button()
+        tb.Separator(self).pack(fill="x")
+        
+        self.target_path_frame = tb.Frame(self)
+        self.target_path_frame.pack(padx=5, pady=5)
+        self.add_path_frame = tb.Frame(self)
+        self.add_path_frame.pack(padx=5, pady=5, fill="x")
+        self.add_btn = tb.Button(self.add_path_frame, bootstyle="light-outline",text="+")
+        self.add_btn.pack(side="left", padx=10, pady=5)
+        
+        tb.Separator(self).pack(fill="x")
+        
+        self.bottom_frame = tb.Frame(self)
+        self.bottom_frame.pack(padx=5, pady=5)
+        self.check_btn = tb.Button(self.bottom_frame, bootstyle="success-outline", text="check")
+        self.check_btn.pack(padx=5, pady=5, side="left")
+        self.move_button = tb.Button(self.bottom_frame, text="move")
+        self.move_button.pack(padx=5, pady=5, side="left")
+        self.move_button.configure(state="disabled")
 
-    def cleanup_btn_on_click(self, callback) -> None:
-         self.cleanup.button.bind("<Button-1>", callback)
+        tb.Separator(self).pack(fill="x")
 
-    def documents_btn_on_click(self, callback) -> None:
-         self.documents.button.bind("<Button-1>", callback) 
+        self.result_frame = tb.Frame(self)
+        self.result_frame.pack(padx=5, pady=5, side="left")
 
-    def pictures_btn_on_click(self, callback) -> None:
-         self.pictures.button.bind("<Button-1>", callback)
-
-    def videos_btn_on_click(self, callback) -> None:
-         self.videos.button.bind("<Button-1>", callback)
-
-    def music_btn_on_click(self, callback) -> None:
-         self.music.button.bind("<Button-1>", callback)
-
-    def execute_btn_on_click(self, callback) -> None:
-        self.execute.button.bind("<Button-1>", callback)
+    def check_btn_on_click(self, callback) -> None:
+         self.check_btn.bind("<Button-1>", callback)
 
     def move_btn_on_click(self, callback) -> None:
         self.move_button.bind("<Button-1>", callback)
 
-    def check_btn_on_click(self, callback) -> None:
-         self.check_btn.bind("<Button-1>", callback)
-      
+    def add_btn_on_click(self, callback) -> None:
+        self.add_btn.bind("<Button-1>", callback)
+
+    def create_new_path(self) -> SetupOptionPopup:
+        return SetupOptionPopup()
+
+    def create_select_path_widget(self, root, callback, label:str, directory:str="", cancel:bool=False, tip=None) -> None:
+        SelectOption(root, callback, label, directory, cancel, tip).pack(padx=5, pady=2)
+
+    def clear_result_frame(self) -> None:
+        if self.result_frame.winfo_children():
+            for child in self.result_frame.winfo_children():
+                child.destroy()
+    
+    def display_results(self, label, amount, path) -> None:
+        ResultWidget(root=self.result_frame, label=label, amount=amount, path=path).pack(padx=5, pady=2)
+
     @staticmethod
     def set_dir(name=None) -> str:
         if name:
             return filedialog.askdirectory(title=f"Set {name} directory")
         return filedialog.askdirectory()
-    
-    def display_results(self, label, amount, row, path) -> None:
-        widget = DisplayOccurancesWidget(root=self.bottom_frame, label=label, amount=amount, path=path)
-        widget.grid_all(row=row)
-
-    def create_check_button(self) -> None:
-        self.check_btn = ttk.Button(self.bottom_frame, text="check")
-        self.check_btn.grid(row=0, column=0, padx=5, pady=5)
-
-    def create_move_button(self, row) -> None:
-        self.move_button = ttk.Button(self.bottom_frame, text="move")
-        self.move_button.grid(row=row, column=0, padx=5, pady=5)
-    
-
-class SelectPathWidget():
-    def __init__(self, root, label, directory) -> None:
-        self.label = ttk.Label(root, text=label, width=15)
-        self.dir = ttk.Label(root, text=directory)
-        self.button = ttk.Button(root, text="edit")
-
-    def grid_all(self, row) -> None:
-        self.label.grid(row=row, column=0, padx=5, pady=5, sticky="w")
-        self.dir.grid(row=row, column=1, padx=5, pady=5, sticky="w")
-        self.button.grid(row=row, column=2, padx=5, pady=5, sticky="w")
-
-class DisplayOccurancesWidget():
-    def __init__(self, root, label, amount, path) -> None:
-        text = f"Found {amount} {label} in {path}"
-        self.label = ttk.Label(root, text=text)
-
-    def grid_all(self, row) -> None:
-        self.label.grid(row=row, column=0, padx=5, pady=5, sticky="w")

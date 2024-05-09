@@ -1,67 +1,71 @@
 from view import View
 from model import Model
 from tkinter import filedialog as fd
+from default_data.data_formats import *
 from datatype import DataTypeCategory, DataType
 import os
+from data_option import DataOption
+
+#for referencing
+from widgets.select_opiton import SelectOption
+from widgets.setup_option import SetupOptionPopup
 
 
 class Controller():
     def __init__(self, view: View, model: Model) -> None:
         self.view = view
         self.model = model
-        self.init_dirs()
-        self.init_binds_on_view()
-        self.init_check_bind()
-        self.create_data_categories()
+        self.create_default_data_categories()
+        self.create_default_widgtes()
+        self.init_binds()
 
-    def init_binds_on_view(self) -> None:
+    def create_default_widgtes(self) -> None:
         """
-        Initiate all button bindings in the view.
+        Create all default path widgets.
         """
-        self.view.cleanup_btn_on_click(lambda event, name="cleanup", view_element=self.view.cleanup: self.save_dir(event, name, view_element))
-        self.view.documents_btn_on_click(lambda event, name="documents", view_element=self.view.documents: self.save_dir(event, name, view_element))
-        self.view.pictures_btn_on_click(lambda event, name="pictures", view_element=self.view.pictures: self.save_dir(event, name, view_element))
-        self.view.videos_btn_on_click(lambda event, name="videos", view_element=self.view.videos: self.save_dir(event, name, view_element))
-        self.view.music_btn_on_click(lambda event, name="music", view_element=self.view.music: self.save_dir(event, name, view_element))
-        self.view.execute_btn_on_click(lambda event, name="execute", view_element=self.view.execute: self.save_dir(event, name, view_element))
+        self.view.create_select_path_widget(root=self.view.base_path_frame, label="Base-Path", 
+                                            directory=self.model.get_path("cleanup"), 
+                                            callback=self.save_dir, 
+                                            cancel=False)
+        for data in self.data_type_categories:
+            self.view.create_select_path_widget(root=self.view.target_path_frame, 
+                                    label=data.name, directory=self.model.get_path(data.name), 
+                                    callback= self.save_dir,
+                                    cancel=True,
+                                    tip=f"{data.endings}")
         
-    def init_check_bind(self) -> None:
+    def init_binds(self) -> None:
         """
-        Bind the views check button.
+        Bind the view's buttons to controllers methods.
         """
+        self.view.add_btn_on_click(self.setup_new_data_option)
         self.view.check_btn_on_click(self.analyze_data)
-
-    def init_move_bind(self) -> None:
-        """
-        Bind the views move button.
-        """
         self.view.move_btn_on_click(self.move_data)
-    
-    def init_dirs(self) -> None:
-        """
-        Set the directories in the view to the once that have been saved
-        in the userdata json file.
-        """
-        self.view.cleanup.dir.configure(text=self.model.get_path("cleanup"))
-        self.view.documents.dir.configure(text=self.model.get_path("documents"))
-        self.view.pictures.dir.configure(text=self.model.get_path("pictures"))
-        self.view.videos.dir.configure(text=self.model.get_path("videos"))
-        self.view.music.dir.configure(text=self.model.get_path("music"))
-        self.view.execute.dir.configure(text=self.model.get_path("execute"))
+        
+    def setup_new_data_option(self, event) -> None:
+        new_path = self.view.create_new_path()
+        new_path.save_btn_on_click(lambda event=event, new_path=new_path: self.save_data_option(event, new_path))
 
-    def create_data_categories(self) -> None:
+    def save_data_option(self, event, new_path:SetupOptionPopup) -> None:
+        file_format_list = new_path.file_format_entry.get().split(",")
+        file_format = {ending for ending in file_format_list}
+        new_option = DataOption(name=new_path.name_entry.get(),
+               path=None,
+               file_format=file_format)
+        print(new_option)
+
+    def create_default_data_categories(self) -> None:
         """
         Create data type category instances with name and corresponding
         endings.
         """
-        self.documents = DataTypeCategory(name="documents", endings=set(["doc", "docx", "pdf", "rtf", "txt", "odt", "md", "html", "htm", "xls", "xlsx"]))
-        self.pictures = DataTypeCategory(name="pictures", endings=set(["jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "psd", "svg"]))
-        self.videos = DataTypeCategory(name="videos", endings=set(["mp4", "avi", "mov", "wmv", "flv", "mkv", "webm"]))
-        self.music = DataTypeCategory(name="music", endings=set(["mp3", "wav", "aac", "flac", "ogg", "wma", "aiff", "aif"]))
-        self.execute = DataTypeCategory(name="executables", endings=set(["exe", "bat", "cmd", "com", "msi", "jar", "js"]))
-        self.other = DataTypeCategory(name="other", endings=None)
+        self.data_type_categories = [DataTypeCategory(name="documents", endings=DOCUMENTS),
+                                     DataTypeCategory(name="pictures", endings=PICTURES),
+                                     DataTypeCategory(name="videos", endings=VIDEOS),
+                                     DataTypeCategory(name="music", endings=MUSIC),
+                                     DataTypeCategory(name="executables", endings=EXECUTABLES)]
 
-    def save_dir(self, event, name, view_element) -> None:
+    def save_dir(self, event, name:str, view_element:SelectOption) -> str:
         """
         Safe a path for the selected categgory to the user data json.
         """
@@ -69,6 +73,7 @@ class Controller():
         if path:
             view_element.dir.configure(text=path)
             self.model.save_path(name=name, path=path)
+        return "break" #return to reset button appearance
 
     def analyze_data(self, event) -> None:
         """
@@ -87,59 +92,39 @@ class Controller():
         """
         Show all findings from the cleanup path.
         """
-        row = 1
-        for data_category in [self.pictures, self.documents, self.videos, self.music, self.execute]:
+        self.view.clear_result_frame()
+        total_known = 0
+        total_unknown = 0
+        for data_category in self.data_type_categories:
             if data_category.list:
-                self.view.display_results(label=data_category.name, amount=len(data_category.list), row=row, path=self.model.get_path("cleanup"))
-                row+=1
-        if row > 1:
-            self.view.create_move_button(row=row)
-            self.init_move_bind()
-        else:
-            #if no element has been found
-            self.view.display_results(label="elements", amount=0, row=row, path=self.model.get_path("cleanup"))
+                self.view.display_results(label=data_category.name, amount=len(data_category.list), path=self.model.get_path("cleanup"))#row=row,
+                total_known += 1
+            else:
+                total_unknown += 1
+        self.view.display_results(label="undefined data types", amount=total_unknown, path=self.model.get_path("cleanup"))
+        if total_known == 0 and total_unknown == 0:
+            self.view.display_results(label="elements", amount=0, path=self.model.get_path("cleanup"))#row=row,
+        if total_known > 0:
+            self.view.move_button.configure(state="enabled")
 
     def move_data(self, event) -> None:
         """
         Move the data from cleanup dir to the selected dirs depending
         on its data category.
         """
-        for data in self.documents.list:
-            if self.model.get_path("documents"):
-                os.replace(os.path.join(self.model.get_path("cleanup"), data.name), os.path.join(self.model.get_path("documents"), data.name))
-            else:
-                self.save_dir(event, name="documents", view_element=self.view.documents)
-        for data in self.pictures.list:
-            if self.model.get_path("pictures"):
-                os.replace(os.path.join(self.model.get_path("cleanup"), data.name), os.path.join(self.model.get_path("pictures"), data.name))
-            else:
-                self.save_dir(event, name="pictures", view_element=self.view.pictures)
-        for data in self.videos.list:
-            if self.model.get_path("videos"):
-                os.replace(os.path.join(self.model.get_path("cleanup"), data.name), os.path.join(self.model.get_path("videos"), data.name))
-            else:
-                self.save_dir(event, name="videos", view_element=self.view.videos)
-        for data in self.music.list:
-            if self.model.get_path("music"):
-                os.replace(os.path.join(self.model.get_path("cleanup"), data.name), os.path.join(self.model.get_path("music"), data.name))
-            else:
-                self.save_dir(event, name="music", view_element=self.view.music)
-        for data in self.execute.list:
-            if self.model.get_path("execute"):
-                os.replace(os.path.join(self.model.get_path("cleanup"), data.name), os.path.join(self.model.get_path("execute"), data.name))
-            else:
-                self.save_dir(event, name="execute", view_element=self.view.execute)
+        for data_category in self.data_type_categories:
+            for data in data_category.list:
+                if self.model.get_path(data_category.name):
+                    os.replace(os.path.join(self.model.get_path("cleanup"), data.name), os.path.join(self.model.get_path(data_category.name), data.name))
+                else:
+                    self.save_dir(event, name=data_category.name, view_element=self.view.documents)
         self.update_bottom_view(event)
 
     def update_bottom_view(self, event) -> None:
         """
         Update the view displaying the data check results.
         """
-        for widget in self.view.bottom_frame.winfo_children():
-            widget.destroy()
-            self.analyze_data(event)
-            self.view.create_check_button()
-            self.init_check_bind()
+        self.view.move_button.configure(state="disabled")
 
     def sort_data(self, data) -> None:
         """
@@ -148,16 +133,17 @@ class Controller():
         """
         ending = data.split(".")
         datatype = DataType(name=data, ending=ending[-1])
-        for data_category in [self.pictures, self.documents, self.videos, self.music, self.execute]:
+        print(datatype)
+        for data_category in self.data_type_categories:
             if datatype.ending in data_category.endings:
                 data_category.list.append(datatype)
-            else: self.other.list.append(datatype)
+            #else: self.other.list.append(datatype)
 
     def clear_data(self) -> None:
         """
         Clear all lists of the data category instances.
         """
-        for data in [self.pictures, self.documents, self.videos, self.music, self.execute, self.other]:
+        for data in self.data_type_categories:
             data.list = []
         
     def run(self) -> None:
