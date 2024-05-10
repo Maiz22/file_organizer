@@ -1,5 +1,5 @@
 import ttkbootstrap as tb
-from ttkbootstrap import tooltip
+from ttkbootstrap.dialogs.dialogs import Messagebox
 from widgets.select_opiton import SelectOption
 from widgets.setup_option import SetupOptionPopup
 from widgets.result_widget import ResultWidget
@@ -22,6 +22,8 @@ class View(tb.Window):
         self.add_path_frame.pack(padx=5, pady=5, fill="x")
         self.add_btn = tb.Button(self.add_path_frame, bootstyle="light-outline",text="+")
         self.add_btn.pack(side="left", padx=10, pady=5)
+        self.set_default = tb.Button(self.add_path_frame, bootstyle="light-outline",text="default")
+        self.set_default.pack(side="right", padx=10, pady=(5,10))
         
         tb.Separator(self).pack(fill="x")
         
@@ -38,8 +40,11 @@ class View(tb.Window):
         self.result_frame = tb.Frame(self)
         self.result_frame.pack(padx=5, pady=5, side="left")
 
+    def default_btn_on_click(self, callback) -> None:
+        self.set_default.bind("<Button-1>", callback)
+
     def check_btn_on_click(self, callback) -> None:
-         self.check_btn.bind("<Button-1>", callback)
+        self.check_btn.bind("<Button-1>", callback)
 
     def move_btn_on_click(self, callback) -> None:
         self.move_button.bind("<Button-1>", callback)
@@ -47,17 +52,28 @@ class View(tb.Window):
     def add_btn_on_click(self, callback) -> None:
         self.add_btn.bind("<Button-1>", callback)
 
-    def create_new_path(self) -> SetupOptionPopup:
+    def edit_setup(self, setup) -> SetupOptionPopup:
+        return SetupOptionPopup(setup)
+
+    def create_new_setup(self) -> SetupOptionPopup:
         return SetupOptionPopup()
 
-    def create_select_path_widget(self, root, callback, label:str, directory:str="", cancel:bool=False, tip=None) -> None:
-        SelectOption(root, callback, label, directory, cancel, tip).pack(padx=5, pady=2)
+    def create_select_path_widget(self, root, edit_callback, delete_callback, label:str, directory:str="", cancel:bool=False, tip=None) -> None:
+        SelectOption(root, edit_callback,delete_callback, label, directory, cancel, tip).pack(padx=5, pady=2)
 
     def clear_result_frame(self) -> None:
         if self.result_frame.winfo_children():
             for child in self.result_frame.winfo_children():
                 child.destroy()
-    
+
+    def error_data_type_already_exists(self, name, popup:SetupOptionPopup) -> None:
+        message_box = Messagebox().show_error(title="Error", message=f"Data type of name {name} already exists.")
+        popup.lift()
+        
+    def info_enter_a_path(self, popup:SetupOptionPopup) -> None:
+        message_box = Messagebox.show_info(title="Info", message="Please enter a path.")
+        popup.lift()
+
     def display_results(self, label, amount, path) -> None:
         ResultWidget(root=self.result_frame, label=label, amount=amount, path=path).pack(padx=5, pady=2)
 

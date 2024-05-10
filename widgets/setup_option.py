@@ -1,13 +1,18 @@
 import ttkbootstrap as tb
 from ttkbootstrap.tooltip import ToolTip
+from tkinter import filedialog
+from data_setup import DataSetup
 
 
 class SetupOptionPopup(tb.Toplevel):
-    def __init__(self) -> None:
+    def __init__(self, setup:DataSetup=None) -> None:
         super().__init__()
         self.title("Setup Path")
         self.resizable(False, False)
+        self.dir = None
         self.init_ui()
+        if setup:
+            self.prefill_setup(setup)
 
     def init_ui(self) -> None:
         self.name_label = tb.Label(self, text="Name:")
@@ -23,6 +28,18 @@ class SetupOptionPopup(tb.Toplevel):
         self.add_path_btn.pack(padx=10, pady=5, anchor="w")
         self.save_btn.pack(padx=10, pady=(5,10), anchor="w")
         ToolTip(self.file_format_label, text=f'Enter file format seperated by ",": doc, docx, pdf')
+        self.add_path_btn_on_click()
 
     def save_btn_on_click(self, callback) -> None:
         self.save_btn.bind("<Button-1>", callback)
+
+    def add_path_btn_on_click(self) -> None:
+        self.add_path_btn.bind("<Button-1>", self.get_dir)
+
+    def get_dir(self, event) -> None:
+        self.dir = filedialog.askdirectory()
+        return "break"
+    
+    def prefill_setup(self, setup):
+        self.name_entry.insert(0, setup.data_type.name)
+        self.file_format_entry.insert(0, str(setup.data_type.endings)[1:-1])
