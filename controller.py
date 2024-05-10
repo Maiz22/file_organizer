@@ -18,7 +18,7 @@ class Controller():
         self.data_type_model = data_type_model
         #self.reset_default_data()
         self.data_types, self.data_setups = self.load_data_from_json()
-        self.create_default_widgtes()
+        self.create_widgets()
         self.init_binds()
 
     def init_binds(self) -> None:
@@ -43,16 +43,16 @@ class Controller():
             child.destroy()
         for child in self.view.result_frame.winfo_children():
             child.destroy()
-        self.create_default_widgtes()
+        self.create_widgets()
 
     def set_default_setup(self) -> None:
         """
         Resets the path.json file to default (empty paths).
         """
         self.path_model.delete_all()
-        self.path_model.insert_element(name="base-path", path="")
+        self.path_model.insert_element(name="Base-Path", element="")
         for key in DEFAULT_DATA_FORMATS:
-            self.path_model.insert_element(name=key, path="")
+            self.path_model.insert_element(name=key, element="")
 
     def set_default_data_types(self) -> None:
         """
@@ -61,12 +61,9 @@ class Controller():
         """
         self.data_type_model.delete_all()
         for key, data in DEFAULT_DATA_FORMATS.items():
-            self.data_type_model.insert_element(name=key, endings=list(data))
-    
-    def get_data_types(self) -> None:
-        pass
+            self.data_type_model.insert_element(name=key, element=list(data))
 
-    def load_data_from_json(self) -> list[DataType, DataSetup]:
+    def load_data_from_json(self) -> tuple[list, list]:
         """
         Get all elements from path.json and data_type.json.
         Creates DataType and DataSetup instance.
@@ -89,7 +86,7 @@ class Controller():
         path from the setup.
         """
         for setup in self.data_setups:
-            if name == setup.data_type.name:
+            if name.lower() == setup.data_type.name.lower():
                 return setup.path
 
     def reset_default_data(self) -> None:
@@ -99,18 +96,55 @@ class Controller():
         self.set_default_setup()
         self.set_default_data_types()
 
-    def create_default_widgtes(self) -> None:
+    def create_widgets(self) -> None:
         """
         Create all default path widgets.
         """
-        self.view.create_select_path_widget(root=self.view.base_path_frame, label="Base-Path", 
-                                            directory=self.get_path_from_setup("base-path"), 
-                                            edit_callback=self.save_dir, 
-                                            delete_callback=None,
-                                            cancel=False)
+        self.create_base_view()
         for setup in self.data_setups:
             if setup.data_type.name != "base-path":
                 self.update_setup_view(setup)
+
+    def create_base_view(self) -> None:
+        self.view.create_select_path_widget(root=self.view.base_path_frame, label="Base-Path", 
+                                    directory=self.get_path_from_setup("base-path"), 
+                                    edit_callback=self.edit_base_path, 
+                                    delete_callback=None,
+                                    cancel=False)
+
+    def edit_base_path(self, event, name:str) -> None:
+        if name.lower() != "base-path":
+            raise ValueError
+        path = self.view.set_dir()
+        self.update_path(name, path)
+        for i, setup in enumerate(self.data_setups):
+            if setup.data_type.name.lower() == name.lower():
+                self.data_setups.pop(i)
+        data_type = DataType(name, endings="")
+        self.update_data_type(data_type.name, data_type.endings)
+        self.data_types.append(data_type)
+        self.data_setups.append(DataSetup(path=path, data_type=data_type))
+        self.update_base_view()
+
+    def update_data_type(self, name, endings) -> None:
+        try:
+            self.data_type_model.delete_element(name)
+        except KeyError:
+            pass
+        self.data_type_model.insert_element(name, element=endings)
+
+
+    def update_path(self, name, path) -> None:
+        try:
+            self.path_model.delete_element(name)
+        except KeyError:
+            pass
+        self.path_model.insert_element(name, element=path)
+
+    def update_base_view(self) -> None:
+        for child in self.view.base_path_frame.winfo_children():
+            child.destroy()
+        self.create_base_view()
                 
     def update_setup_view(self, setup:DataSetup) -> None:
         self.view.create_select_path_widget(root=self.view.target_path_frame, 
@@ -153,8 +187,8 @@ class Controller():
     def save_data_setup(self, event, new_option:SetupOptionPopup) -> None:
         data_type, data_setup = self.validate_data(new_option)
         if data_type and data_setup:
-            self.data_type_model.insert_element(name=data_type.name, endings=list(data_type.endings))
-            self.path_model.insert_element(name=data_type.name, path=data_setup.path)
+            self.data_type_model.insert_element(name=data_type.name, element=list(data_type.endings))
+            self.path_model.insert_element(name=data_type.name, element=data_setup.path)
             self.data_types.append(data_type)
             self.data_setups.append(data_setup)
             self.update_setup_view(setup=data_setup)
@@ -181,7 +215,6 @@ class Controller():
 
     def validate_data_type(self, name:str, endings:str) -> DataType|None:
         for data in self.data_types:
-            print(data.name.lower(), name.lower())
             if data.name.lower() == name.lower():
                 raise ValueError("Datatype already exists.")
         return DataType(name=name, endings=endings)
