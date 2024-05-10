@@ -51,3 +51,10 @@ class Model:
                 json_file.write(json.dumps(data, indent=4))
         except FileNotFoundError:
             return
+        
+    def update_element(self, name, element) -> None:
+        try:
+            self.delete_element(name)
+        except KeyError:
+            pass
+        self.insert_element(name, element)

@@ -1,6 +1,6 @@
 #functional imports
 from view import View
-from model import PathModel, DataTypeModel
+from model import Model
 from default_data.data_formats import *
 from data_type import DataType
 from data_setup import DataSetup
@@ -12,7 +12,7 @@ from widgets.setup_option import SetupOptionPopup
 
 
 class Controller():
-    def __init__(self, view: View, path_model: PathModel, data_type_model = DataTypeModel) -> None:
+    def __init__(self, view: View, path_model:Model, data_type_model:Model) -> None:
         self.view = view
         self.path_model = path_model
         self.data_type_model = data_type_model
@@ -116,30 +116,30 @@ class Controller():
         if name.lower() != "base-path":
             raise ValueError
         path = self.view.set_dir()
-        self.update_path(name, path)
+        self.path_model.update_element(name, path)
         for i, setup in enumerate(self.data_setups):
             if setup.data_type.name.lower() == name.lower():
                 self.data_setups.pop(i)
         data_type = DataType(name, endings="")
-        self.update_data_type(data_type.name, data_type.endings)
+        self.data_type_model.update_element(data_type.name, data_type.endings)
         self.data_types.append(data_type)
         self.data_setups.append(DataSetup(path=path, data_type=data_type))
         self.update_base_view()
 
-    def update_data_type(self, name, endings) -> None:
-        try:
-            self.data_type_model.delete_element(name)
-        except KeyError:
-            pass
-        self.data_type_model.insert_element(name, element=endings)
-
-
-    def update_path(self, name, path) -> None:
-        try:
-            self.path_model.delete_element(name)
-        except KeyError:
-            pass
-        self.path_model.insert_element(name, element=path)
+    #def update_data_type(self, name, endings) -> None:
+    #    try:
+    #        self.data_type_model.delete_element(name)
+    #    except KeyError:
+    #        pass
+    #    self.data_type_model.insert_element(name, element=endings)
+#
+#
+    #def update_path(self, name, path) -> None:
+    #    try:
+    #        self.path_model.delete_element(name)
+    #    except KeyError:
+    #        pass
+    #    self.path_model.insert_element(name, element=path)
 
     def update_base_view(self) -> None:
         for child in self.view.base_path_frame.winfo_children():
