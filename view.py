@@ -66,16 +66,23 @@ class View(tb.Window):
             for child in self.result_frame.winfo_children():
                 child.destroy()
 
-    def error_data_type_already_exists(self, name, popup:SetupOptionPopup) -> None:
-        message_box = Messagebox().show_error(title="Error", message=f"Data type of name {name} already exists.")
+    def error_invalid_data_type_name(self, name, popup:SetupOptionPopup) -> None:
+        message_box = Messagebox().show_error(title="Error", message=f"Invalid data type name {name}.")
         popup.lift()
         
     def info_enter_a_path(self, popup:SetupOptionPopup) -> None:
-        message_box = Messagebox.show_info(title="Info", message="Please enter a path.")
+        message_box = Messagebox.show_info(title="Info", message="Please enter a valid path.")
         popup.lift()
 
     def display_results(self, label, amount, path) -> None:
         ResultWidget(root=self.result_frame, label=label, amount=amount, path=path).pack(padx=5, pady=2)
+
+    def destroy_child_widgets(self, parent_frame:tb.Frame) -> None:
+        """
+        Destroy all child widgets inside of a frame.
+        """
+        for child in parent_frame.winfo_children():
+            child.destroy()
 
     @staticmethod
     def set_dir(name=None) -> str:
