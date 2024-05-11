@@ -129,6 +129,10 @@ class Controller():
                                     cancel=False)
 
     def edit_base_path(self, event, name:str) -> None:
+        """
+        Edits the base path by validating the chosen path, adding 
+        it to the DBs and temp lists and updating the view.
+        """
         path = self.view.set_dir()
         try:
             self.validate_base_path(name=name, path=path)
@@ -181,7 +185,8 @@ class Controller():
         temp lists and DBs and add the new once.
         """
         name = edit_setup.name_entry.get()
-        endings = edit_setup.file_format_entry.get()
+        new_endings = edit_setup.file_format_entry.get()
+        endings = new_endings.split(",")
         path = edit_setup.dir
         data_type = DataType(name=name, endings=endings)
         try:
@@ -199,9 +204,6 @@ class Controller():
         self.reset_all_widgets()
         edit_setup.destroy()
 
-    def update_setup_widget(self) -> None:
-        pass
-
     def create_new_setup(self, event) -> None:
         """
         Opens a new setup popup and binds the save method
@@ -211,6 +213,10 @@ class Controller():
         new_setup.save_btn_on_click(lambda event=event, new_setup=new_setup: self.save_setup_data(event, new_setup))
 
     def save_setup_data(self, event, new_option:SetupOptionPopup) -> None:
+        """
+        Validates the newly created data, adds it in to the temp data/setup lists
+        and adds it to the DBs.
+        """
         data_type, data_setup = self.validate_new_data(new_option)
         if data_type and data_setup:
             self.data_type_model.insert_element(name=data_type.name, element=list(data_type.endings))
@@ -219,8 +225,6 @@ class Controller():
             self.data_setups.append(data_setup)
             self.create_setup_widget(setup=data_setup)
             new_option.destroy()
-
-    #Data Validation
 
     def validate_new_data(self, new_option:SetupOptionPopup) -> tuple[DataType|DataSetup]:
         """
@@ -265,41 +269,41 @@ class Controller():
         if name.lower() != "base-path" or path == "":
             raise ValueError("Invalid base path!")
 
-    def load_setup(self) -> None:
-        pass
-
-############################################
-
     def analyze_data(self, event) -> None:
         """
         Analize the data in the cleanup path.
         """
-        self.clear_data()
-        if self.model.get_setup("cleanup"):
-            files = os.listdir(self.model.get_setup("cleanup"))
+
+        self.sorted_dict = self.create_sorting_dictionary()
+        path = self.path_model.get_element("Base-Path")
+        if path != "":
+            files = os.listdir(path)
             for element in files:
                 self.sort_data(data=element)
-            self.display_findings()
         else:
-            self.save_dir(event, name="cleanup", view_element=self.view.cleanup)
+            self.view.info_select_base_dir()
+        self.display_findings()
+
+    def create_sorting_dictionary(self) -> dict:
+        sort_dict = {"unknown": []}
+        for data_type in self.data_types:
+            sort_dict[data_type.name] = []
+        return sort_dict
 
     def display_findings(self) -> None:
         """
         Show all findings from the cleanup path.
         """
-        self.view.clear_result_frame()
-        total_known = 0
-        total_unknown = 0
-        for data_category in self.data_type_categories:
-            if data_category.list:
-                self.view.display_results(label=data_category.name, amount=len(data_category.list), path=self.model.get_setup("cleanup"))#row=row,
-                total_known += 1
-            else:
-                total_unknown += 1
-        self.view.display_results(label="undefined data types", amount=total_unknown, path=self.model.get_setup("cleanup"))
-        if total_known == 0 and total_unknown == 0:
-            self.view.display_results(label="elements", amount=0, path=self.model.get_setup("cleanup"))#row=row,
-        if total_known > 0:
+        check_move = False
+        base_path = self.get_path_from_setup(name="Base-Path")
+        self.view.destroy_child_widgets(self.view.result_frame)
+        for data in self.data_types:
+            if self.sorted_dict[data.name]:
+                self.view.display_results(label=data.name, amount=len(self.sorted_dict[data.name]), path=base_path)
+                check_move = True
+        if self.sorted_dict["unknown"]:
+            self.view.display_results(label="undefined data types", amount=len(self.sorted_dict["unknown"]), path=base_path)
+        if check_move:
             self.view.move_button.configure(state="enabled")
 
     def move_data(self, event) -> None:
@@ -307,51 +311,40 @@ class Controller():
         Move the data from cleanup dir to the selected dirs depending
         on its data category.
         """
-        for data_category in self.data_type_categories:
-            for data in data_category.list:
-                if self.model.get_setup(data_category.name):
-                    os.replace(os.path.join(self.model.get_setup("cleanup"), data.name), os.path.join(self.model.get_setup(data_category.name), data.name))
+        total_moved, total_not_moved = 0, 0
+        base_path = self.get_path_from_setup(name="Base-Path")
+        for category,data in self.sorted_dict.items():
+            if category != "unknown":
+                target_path = self.get_path_from_setup(name=category)
+                if target_path == "":
+                    self.view.error_missing_target_path(category)
+                    return
                 else:
-                    self.save_dir(event, name=data_category.name, view_element=self.view.documents)
-        self.update_bottom_view(event)
-
-    def update_bottom_view(self, event) -> None:
-        """
-        Update the view displaying the data check results.
-        """
+                    target_files = os.listdir(target_path)
+                    for element in data:
+                        if element not in target_files:
+                            os.replace(os.path.join(base_path, element), os.path.join(target_path, element))
+                            total_moved += 1
+                        else:
+                            total_not_moved += 1
+        self.view.info_show_move_result(total_moved=total_moved, total_not_moved=total_not_moved)
         self.view.move_button.configure(state="disabled")
+        self.analyze_data(event=None)
 
     def sort_data(self, data) -> None:
         """
         Sort the found data by data category ending and add it to 
-        the corresponding data category list.
+        the corresponding known/unknown data list.
         """
-        datatype = DataType(name=data, ending=data.split(".")[-1])
-        for data_category in self.data_type_categories:
-            if datatype.ending in data_category.endings:
-                data_category.list.append(datatype)
-            #else: self.other.list.append(datatype)
-
-    def clear_data(self) -> None:
-        """
-        Clear all lists of the data category instances.
-        """
-        for data in self.data_type_categories:
-            data.list = []
+        name, endings = data, data.split(".")[-1]
+        for data_type in self.data_types:
+            if endings in data_type.endings:
+                self.sorted_dict[data_type.name].append(name)
+                return
+        self.sorted_dict["unknown"].append(name)
         
     def run(self) -> None:
         """
         Start the view mainloop.
         """
         self.view.mainloop()
-
-
-    #def save_dir(self, event, name:str, view_element:SelectOption) -> str:
-    #    """
-    #    Safe a path for the selected categgory to the user data json.
-    #    """
-    #    path = self.view.set_dir(name)
-    #    if path:
-    #        view_element.dir.configure(text=path)
-    #        self.model.save_path(name=name, path=path)
-    #    return "break" #return to reset button appearance

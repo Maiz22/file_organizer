@@ -7,4 +7,4 @@ class DataType:
         self.endings = endings
 
     def __repr__(self) -> str:
-        return f"Name: {self.name}\nEnding: {self.endings}"
+        return f"Name: {self.name} - Ending: {self.endings}"

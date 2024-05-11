@@ -40,6 +40,16 @@ class View(tb.Window):
         self.result_frame = tb.Frame(self)
         self.result_frame.pack(padx=5, pady=5, side="left")
 
+    def destroy_child_widgets(self, parent_frame:tb.Frame) -> None:
+        """
+        Destroy all child widgets inside of a frame.
+        """
+        if parent_frame.winfo_children():
+            for child in parent_frame.winfo_children():
+                child.destroy()
+
+    ### on click events ###
+
     def default_btn_on_click(self, callback) -> None:
         self.set_default.bind("<Button-1>", callback)
 
@@ -52,6 +62,8 @@ class View(tb.Window):
     def add_btn_on_click(self, callback) -> None:
         self.add_btn.bind("<Button-1>", callback)
 
+    ### open popup methods ###
+
     def edit_setup(self, setup) -> SetupOptionPopup:
         return SetupOptionPopup(setup)
 
@@ -59,30 +71,38 @@ class View(tb.Window):
         return SetupOptionPopup()
 
     def create_select_path_widget(self, root, edit_callback, delete_callback, label:str, directory:str="", cancel:bool=False, tip=None) -> None:
-        SelectOption(root, edit_callback,delete_callback, label, directory, cancel, tip).pack(padx=5, pady=2)
+        SelectOption(root, edit_callback, delete_callback, label, directory, cancel, tip).pack(padx=5, pady=2)
 
-    def clear_result_frame(self) -> None:
-        if self.result_frame.winfo_children():
-            for child in self.result_frame.winfo_children():
-                child.destroy()
+    #### Messages ###
 
     def error_invalid_data_type_name(self, name, popup:SetupOptionPopup) -> None:
-        message_box = Messagebox().show_error(title="Error", message=f"Invalid data type name {name}.")
+        Messagebox().show_error(title="Error", message=f"Invalid data type name {name}.")
         popup.lift()
         
     def info_enter_a_path(self, popup:SetupOptionPopup) -> None:
-        message_box = Messagebox.show_info(title="Info", message="Please enter a valid path.")
+        Messagebox.show_info(title="Info", message="Please enter a valid path.")
         popup.lift()
 
-    def display_results(self, label, amount, path) -> None:
-        ResultWidget(root=self.result_frame, label=label, amount=amount, path=path).pack(padx=5, pady=2)
+    def info_select_base_dir(self) -> None:
+        Messagebox.show_info(title="Info", message="Please select a base path first.")
 
-    def destroy_child_widgets(self, parent_frame:tb.Frame) -> None:
-        """
-        Destroy all child widgets inside of a frame.
-        """
-        for child in parent_frame.winfo_children():
-            child.destroy()
+    def info_show_move_result(self, total_moved, total_not_moved) -> None:
+        msg = "Nothing to move!"
+        if total_moved > 0 and total_not_moved > 0:
+            msg = f"Moved {total_moved} elements.\nUnaible to move {total_not_moved} element(s), since name already exists at target."
+        elif total_moved > 0:
+            msg = f"Moved {total_moved} element(s)."
+        elif total_not_moved > 0:
+            msg = f"Unaible to move {total_not_moved} element(s), since name already exists at target."
+        Messagebox.show_info(title="Result", message=msg)
+
+    def error_missing_target_path(self, category):
+        Messagebox().show_error(title="Error", message=f"Please enter a target path for {category} first or remove it from you setup")
+ 
+    def display_results(self, label, amount, path) -> None:
+        ResultWidget(root=self.result_frame, label=label, amount=amount, path=path).pack(padx=5, pady=2, anchor="w")
+
+    ### static methods ###
 
     @staticmethod
     def set_dir(name=None) -> str:

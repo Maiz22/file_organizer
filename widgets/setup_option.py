@@ -25,11 +25,11 @@ class SetupOptionPopup(tb.Toplevel):
         self.name_label.pack(padx=10, pady=(10, 5), anchor="w")
         self.name_entry.pack(padx=10, pady=5, anchor="w")
         self.file_format_label.pack(padx=10, pady=5, anchor="w")
+        ToolTip(self.file_format_label, text=f'Enter file format seperated by ",": doc, docx, pdf')
         self.file_format_entry.pack(padx=10, pady=5, anchor="w")
         self.add_path_btn.pack(padx=10, pady=5, anchor="w")
         self.path_label.pack(padx=10, pady=5, anchor="w")
         self.save_btn.pack(padx=10, pady=(5,10), anchor="w")
-        ToolTip(self.file_format_label, text=f'Enter file format seperated by ",": doc, docx, pdf')
         self.add_path_btn_on_click()
 
     def save_btn_on_click(self, callback) -> None:
@@ -47,6 +47,11 @@ class SetupOptionPopup(tb.Toplevel):
     def prefill_setup(self, setup):
         self.name_entry.insert(0, setup.data_type.name)
         self.name_entry.configure(state="readonly")
-        self.file_format_entry.insert(0, str(setup.data_type.endings))
+        for i, ending in enumerate(setup.data_type.endings):
+            if i == 0:
+                self.file_format_entry.insert(0, f"{ending}")
+            else:
+                self.file_format_entry.insert(0, f"{ending},")
+        #self.file_format_entry.insert(0, str(setup.data_type.endings)[1:-1])
         self.dir = setup.path
         self.path_label.configure(text=self.dir)

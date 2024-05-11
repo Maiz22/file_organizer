@@ -1,54 +1,16 @@
 {
+    "Base-Path": "",
     "documents": [
-        "html",
-        "doc",
-        "rtf",
-        "docx",
-        "xlsx",
-        "md",
         "htm",
-        "odt",
-        "xls",
+        "xlsx",
         "txt",
+        "rtf",
+        "xls",
+        "odt",
+        "html",
+        "md",
+        "docx",
+        "doc",
         "pdf"
-    ],
-    "pictures": [
-        "svg",
-        "png",
-        "jpg",
-        "tif",
-        "bmp",
-        "gif",
-        "tiff",
-        "psd",
-        "jpeg"
-    ],
-    "videos": [
-        "mkv",
-        "webm",
-        "mov",
-        "avi",
-        "mp4",
-        "flv",
-        "wmv"
-    ],
-    "music": [
-        "aiff",
-        "wav",
-        "mp3",
-        "wma",
-        "flac",
-        "ogg",
-        "aac",
-        "aif"
-    ],
-    "executables": [
-        "js",
-        "jar",
-        "exe",
-        "cmd",
-        "bat",
-        "msi",
-        "com"
     ]
 }

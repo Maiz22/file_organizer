@@ -3,6 +3,10 @@ import json
 
 
 class Model:
+    """
+    Model holding base methods as well as helper methods 
+    to interact with a .json db
+    """
     def __init__(self, dir, file) -> None:
         self.dir = dir
         self.file = file
@@ -10,7 +14,7 @@ class Model:
         if not os.path.exists(self.dir):
             os.mkdir(self.dir)
 
-    def get_element(self, name:str) -> None:
+    def get_element(self, name:str) -> any:
         if os.path.exists(self.path):
             with open(self.path, 'r') as json_file:
                 try:
