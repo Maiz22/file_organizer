@@ -9,14 +9,14 @@ if TYPE_CHECKING:
 
 
 class SetupOptionPopup(tb.Toplevel):
-    def __init__(self, setup) -> None:
+    def __init__(self, data_type: DataType) -> None:
         super().__init__()
         self.title("Setup Path")
         self.resizable(False, False)
         self.dir = None
         self.init_ui()
-        if setup:
-            self.prefill_setup(setup)
+        if data_type:
+            self.prefill_setup(data_type)
 
     def init_ui(self) -> None:
         self.name_label = tb.Label(self, text="Name:")
@@ -54,14 +54,14 @@ class SetupOptionPopup(tb.Toplevel):
         self.lift()
         return "break"
 
-    def prefill_setup(self, setup):
-        self.name_entry.insert(0, setup.data_type.name)
+    def prefill_setup(self, data_type: DataType) -> None:
+        self.name_entry.insert(0, data_type.name)
         self.name_entry.configure(state="readonly")
-        for i, ending in enumerate(setup.data_type.endings):
+        for i, ending in enumerate(data_type.endings):
             if i == 0:
                 self.file_format_entry.insert(0, f"{ending}")
             else:
                 self.file_format_entry.insert(0, f"{ending},")
         # self.file_format_entry.insert(0, str(setup.data_type.endings)[1:-1])
-        self.dir = setup.path
+        self.dir = data_type.path
         self.path_label.configure(text=self.dir)

@@ -7,7 +7,8 @@ class DataType(BaseModel):
     """
 
     name: str
-    endings: list[str]  # List of file endings, e.g., ['doc', 'docx', 'pdf']
+    endings: list = []
+    path: str = ""
 
 
 class DataTypePathConfig(BaseModel):

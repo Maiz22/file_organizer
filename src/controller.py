@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import os
-from model import DataType, DataTypePathConfig
+from model import DataType
 from crud.data_type import *
-from crud.data_type_path_config import *
 from default_data.data_formats import DEFAULT_DATA_FORMATS
 
 if TYPE_CHECKING:
@@ -32,34 +31,24 @@ class Controller:
         Resets all jsons to the default values, updates all
         widgets.
         """
-        self.reset_path_db()
         self.reset_data_type_db()
         self.reset_all_widgets()
 
     def reset_all_widgets(self) -> None:
-        self.data_types, self.data_setups = self.load_data_from_json()
+        self.check_load_default_data()
         self.view.destroy_child_widgets(self.view.target_path_frame)
         self.view.destroy_child_widgets(self.view.base_path_frame)
         self.view.destroy_child_widgets(self.view.result_frame)
         self.update_all_setup_widgets()
 
-    def reset_path_db(self) -> None:
+    def reset_data_type_db(self) -> None:
         """
         Resets the path.json file to default (empty paths).
         """
-        self.path_model.delete_all()
-        self.path_model.insert_element(name="Base-Path", element="")
-        for key in DEFAULT_DATA_FORMATS:
-            self.path_model.insert_element(name=key, element="")
-
-    def reset_data_type_db(self) -> None:
-        """
-        Restes the data_type.json file to default values that
-        are stored in DEFAULT_DATA_FORMATS.
-        """
-        self.data_type_model.delete_all()
-        for key, data in DEFAULT_DATA_FORMATS.items():
-            self.data_type_model.insert_element(name=key, element=list(data))
+        delete_all_data_types()
+        insert_data_type(DataType(name="Base-Path"))
+        for key, val in DEFAULT_DATA_FORMATS.items():
+            insert_data_type(DataType(name=key, endings=list(val)))
 
     def check_load_default_data(self) -> None:
         """
@@ -70,18 +59,16 @@ class Controller:
         if not data_types_json:
             for name, endings in DEFAULT_DATA_FORMATS.items():
                 data_type = DataType(name=name, endings=endings)
-                data_type_dir = DataTypePathConfig(data_type=data_type, path="")
-                insert_data_type(name=name, data_type=data_type)
-                insert_data_type_dir(name=name, data_type=data_type_dir)
+                insert_data_type(data_type=data_type)
+                # data_type_dir = DataTypePathConfig(data_type=data_type, path="")
+                # insert_data_type_dir(name=name, data_type=data_type_dir)
 
-    def get_path_from_setup(self, name: str) -> str:
+    def get_path_from_data_type(self, name: str) -> str:
         """
         Takes a data type name as str and returns the corresponding
         path from the setup.
         """
-        data_dir = get_data_dirs_type_by_name(name)
-        if data_dir:
-            return data_dir.path
+        return get_data_type_by_name(name).path if get_data_type_by_name(name) else ""
 
     def update_all_setup_widgets(self) -> None:
         """
@@ -92,19 +79,17 @@ class Controller:
         for data in data_types:
             print(f"Creating setup widget for {data}")
             if data.name != "base-path":
-                data_type_dir = get_data_dirs_type_by_name(data.name)
-                path = data_type_dir if data_type_dir else ""
-                self.create_setup_widget(data, path)
+                self.create_setup_widget(data)
 
-    def create_setup_widget(self, data_type: DataType, path: str) -> None:
+    def create_setup_widget(self, data_type: DataType) -> None:
         """
         Helper function updating the setup widgets of the view.
         """
         self.view.create_select_path_widget(
             root=self.view.target_path_frame,
             label=data_type.name,
-            directory=path,
-            edit_callback=self.edit_setup,
+            directory=data_type.path,
+            edit_callback=self.edit_data_type,
             delete_callback=self.delete_setup,
             cancel=True,
             tip=f"{data_type.endings}",
@@ -126,7 +111,7 @@ class Controller:
         self.view.create_select_path_widget(
             root=self.view.base_path_frame,
             label="Base-Path",
-            directory=self.get_path_from_setup("base-path"),
+            directory=self.get_path_from_data_type("Base-Path"),
             edit_callback=self.edit_base_path,
             delete_callback=None,
             cancel=False,
@@ -137,19 +122,19 @@ class Controller:
         Edits the base path by validating the chosen path, adding
         it to the DBs and temp lists and updating the view.
         """
+        print("Editing base path")
         path = self.view.set_dir()
-        try:
-            self.validate_base_path(name=name, path=path)
-        except ValueError:
+        if name.lower() != "base-path" or path == "":
             return "break"
-        self.path_model.update_element(name, path)
-        self.remove_elements_from_temp_lists(name)
-        data_type = DataType(name, endings="")
-        self.data_type_model.update_element(data_type.name, data_type.endings)
-        self.data_types.append(data_type)
-        self.data_setups.append(DataSetup(path=path, data_type=data_type))
+        data_type = get_data_type_by_name(name=name)
+        if not data_type:
+            data_type = DataType(name=name)
+            insert_data_type(data_type)
+        data_type.path = path
+        update_data_type(name=data_type.name, data_type=data_type)
         self.update_base_view()
         return "break"
+        # self.remove_elements_from_temp_lists(name)
 
     def delete_setup(self, event, name) -> None:
         """
@@ -160,57 +145,59 @@ class Controller:
         self.path_model.delete_element(name)
         self.data_type_model.delete_element(name)
 
-    def remove_elements_from_temp_lists(self, name) -> None:
-        """
-        Helper function removing element name from the
-        temp lists.
-        """
-        for i, setup in enumerate(self.data_setups):
-            if setup.data_type.name == name:
-                self.data_setups.pop(i)
-        for i, data_type in enumerate(self.data_types):
-            if data_type.name == name:
-                self.data_types.pop(i)
+    # def remove_elements_from_temp_lists(self, name) -> None:
+    #    """
+    #    Helper function removing element name from the
+    #    temp lists.
+    #    """
+    #    for i, setup in enumerate(self.data_setups):
+    #        if setup.data_type.name == name:
+    #            self.data_setups.pop(i)
+    #    for i, data_type in enumerate(self.data_types):
+    #        if data_type.name == name:
+    #            self.data_types.pop(i)
 
-    def edit_setup(self, event, name: str) -> None:
+    def edit_data_type(self, event, name: str) -> None:
         """
         Takes the name of a setup and opens a prefilled
         edit setup view.
         """
-        for setup in self.data_setups:
-            if setup.data_type.name == name:
-                edit_setup = self.view.edit_setup(setup)
+        data_type = get_data_type_by_name(name)
+        if not data_type:
+            print("No data type found for editing.")
+            return "break"
+        edit_setup = self.view.edit_setup(data_type)
         edit_setup.save_btn_on_click(
-            lambda event=event, edit_setup=edit_setup, name=name: self.save_setup_data_edit(
-                event, edit_setup, name
+            lambda event=event, edit_setup=edit_setup, data_type=data_type: self.save_setup_data_edit(
+                event, edit_setup, data_type
             )
         )
 
     def save_setup_data_edit(
-        self, event, edit_setup: SetupOptionPopup, name: str
+        self, event, edit_setup: SetupOptionPopup, data_type: DataType
     ) -> None:
         """
         Save edited setup. Only validate the path, since the name
         cannot be changed in the frontend. Remove the old elements from
         temp lists and DBs and add the new once.
         """
-        name = edit_setup.name_entry.get()
         new_endings = edit_setup.file_format_entry.get()
         endings = new_endings.split(",")
         path = edit_setup.dir
-        data_type = DataType(name=name, endings=endings)
-        try:
-            data_setup = self.validate_setup_path(path=path, data_type=data_type)
-        except ValueError:
+        update_data_type(
+            name=data_type.name,
+            data_type=DataType(name=data_type.name, endings=endings, path=path),
+        )
+        if path is None or path == "":
             self.view.info_enter_a_path(edit_setup)
-            return
-        self.data_type_model.delete_element(name)
-        self.data_type_model.insert_element(name, element=endings)
-        self.path_model.delete_element(name)
-        self.path_model.insert_element(name, element=path)
-        self.remove_elements_from_temp_lists(name)
-        self.data_types.append(data_type)
-        self.data_setups.append(data_setup)
+            raise ValueError("Path cannot be empty.")
+        # self.data_type_model.delete_element(name)
+        # self.data_type_model.insert_element(name, element=endings)
+        # self.path_model.delete_element(name)
+        # self.path_model.insert_element(name, element=path)
+        # self.remove_elements_from_temp_lists(name)
+        # self.data_types.append(data_type)
+        # self.data_setups.append(data_setup)
         self.reset_all_widgets()
         edit_setup.destroy()
 
@@ -276,13 +263,12 @@ class Controller:
                 raise ValueError("Datatype already exists.")
         return DataType(name=name, endings=endings)
 
-    def validate_setup_path(self, path: str, data_type: DataType) -> DataSetup | None:
-        """
-        Checks if a path has been added to a new setup.
-        """
-        if path is None or path == "":
-            raise ValueError("Please enter a path.")
-        return DataSetup(path=path, data_type=data_type)
+    # def validate_setup_path(self, path: str, data_type: DataType) -> DataSetup | None:
+    #    """
+    #    Checks if a path has been added to a new setup.
+    #    """
+    #
+    #    return DataSetup(path=path, data_type=data_type)
 
     def validate_base_path(self, name, path):
         """

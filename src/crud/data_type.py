@@ -26,15 +26,15 @@ def get_all_data_types() -> list[DataType]:
         return []
 
 
-def insert_data_type(name: str, data_type: DataType) -> None:
+def insert_data_type(data_type: DataType) -> None:
     try:
         with open(DATA_TYPE_JSON_PATH, "r") as json_file:
             data = json.load(json_file)
-            data[name] = data_type.model_dump()
+            data[data_type.name] = data_type.model_dump()
             with open(DATA_TYPE_JSON_PATH, "w") as json_file:
                 json_file.write(json.dumps(data, indent=4))
     except FileNotFoundError:
-        data = {name: data_type.model_dump()}
+        data = {data_type.name: data_type.model_dump()}
         with open(DATA_TYPE_JSON_PATH, "w") as json_file:
             json_file.write(json.dumps(data, indent=4))
 
