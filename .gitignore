@@ -1,1 +1,6 @@
-path.json/
+venv/
+__pycache__/
+.env
+.pytest_cache/
+
+data/path.json
