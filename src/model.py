@@ -1,64 +1,20 @@
-import os
-import json
+from pydantic import BaseModel
 
 
-class Model:
+class DataType(BaseModel):
     """
-    Model holding base methods as well as helper methods 
-    to interact with a .json db
+    Model to represent a data type with its name and endings.
     """
-    def __init__(self, dir, file) -> None:
-        self.dir = dir
-        self.file = file
-        self.path = os.path.join(self.dir, self.file)
-        if not os.path.exists(self.dir):
-            os.mkdir(self.dir)
 
-    def get_element(self, name:str) -> any:
-        if os.path.exists(self.path):
-            with open(self.path, 'r') as json_file:
-                try:
-                    return json.load(json_file)[name]
-                except KeyError:
-                    return None
-                
-    def get_all(self) -> list:
-        try:
-            with open(self.path, "r") as json_file:
-                return json.load(json_file)
-        except FileNotFoundError:
-            pass
+    name: str
+    endings: list[str]  # List of file endings, e.g., ['doc', 'docx', 'pdf']
 
-    def insert_element(self, name:str, element:list) -> None:
-        try:
-            with open(self.path, "r") as json_file:
-                data = json.load(json_file)
-                data[name] = element
-                with open(self.path, 'w') as json_file:
-                    json_file.write(json.dumps(data, indent=4))
-        except FileNotFoundError:
-            data = {}
-            data[name] = element
-            with open(self.path, 'w') as json_file:
-                json_file.write(json.dumps(data, indent=4))
 
-    def delete_element(self, name:str) -> None:
-        data = self.get_all()
-        data.pop(name)
-        with open(self.path, 'w') as json_file:
-            json_file.write(json.dumps(data, indent=4))
+class DataTypePathConfig(BaseModel):
+    """
+    Model representing data setup by combining data_type and
+    target path.
+    """
 
-    def delete_all(self) -> None:
-        data={}
-        try:
-            with open(self.path, 'w') as json_file:
-                json_file.write(json.dumps(data, indent=4))
-        except FileNotFoundError:
-            return
-        
-    def update_element(self, name, element) -> None:
-        try:
-            self.delete_element(name)
-        except KeyError:
-            pass
-        self.insert_element(name, element)
+    data_type: DataType
+    path: str

@@ -15,21 +15,27 @@ class View(tb.Window):
         self.base_path_frame.pack(padx=5, pady=5)
 
         tb.Separator(self).pack(fill="x")
-        
+
         self.target_path_frame = tb.Frame(self)
         self.target_path_frame.pack(padx=5, pady=5)
         self.add_path_frame = tb.Frame(self)
         self.add_path_frame.pack(padx=5, pady=5, fill="x")
-        self.add_btn = tb.Button(self.add_path_frame, bootstyle="light-outline",text="+")
+        self.add_btn = tb.Button(
+            self.add_path_frame, bootstyle="light-outline", text="+"
+        )
         self.add_btn.pack(side="left", padx=10, pady=5)
-        self.set_default = tb.Button(self.add_path_frame, bootstyle="light-outline",text="default")
-        self.set_default.pack(side="right", padx=10, pady=(5,10))
-        
+        self.set_default = tb.Button(
+            self.add_path_frame, bootstyle="light-outline", text="default"
+        )
+        self.set_default.pack(side="right", padx=10, pady=(5, 10))
+
         tb.Separator(self).pack(fill="x")
-        
+
         self.bottom_frame = tb.Frame(self)
         self.bottom_frame.pack(padx=5, pady=5)
-        self.check_btn = tb.Button(self.bottom_frame, bootstyle="success-outline", text="check")
+        self.check_btn = tb.Button(
+            self.bottom_frame, bootstyle="success-outline", text="check"
+        )
         self.check_btn.pack(padx=5, pady=5, side="left")
         self.move_button = tb.Button(self.bottom_frame, text="move")
         self.move_button.pack(padx=5, pady=5, side="left")
@@ -40,7 +46,7 @@ class View(tb.Window):
         self.result_frame = tb.Frame(self)
         self.result_frame.pack(padx=5, pady=5, side="left")
 
-    def destroy_child_widgets(self, parent_frame:tb.Frame) -> None:
+    def destroy_child_widgets(self, parent_frame: tb.Frame) -> None:
         """
         Destroy all child widgets inside of a frame.
         """
@@ -70,16 +76,29 @@ class View(tb.Window):
     def create_new_setup(self) -> SetupOptionPopup:
         return SetupOptionPopup()
 
-    def create_select_path_widget(self, root, edit_callback, delete_callback, label:str, directory:str="", cancel:bool=False, tip=None) -> None:
-        SelectOption(root, edit_callback, delete_callback, label, directory, cancel, tip).pack(padx=5, pady=2)
+    def create_select_path_widget(
+        self,
+        root,
+        edit_callback,
+        delete_callback,
+        label: str,
+        directory: str = "",
+        cancel: bool = False,
+        tip=None,
+    ) -> None:
+        SelectOption(
+            root, edit_callback, delete_callback, label, directory, cancel, tip
+        ).pack(padx=5, pady=2)
 
     #### Messages ###
 
-    def error_invalid_data_type_name(self, name, popup:SetupOptionPopup) -> None:
-        Messagebox().show_error(title="Error", message=f"Invalid data type name {name}.")
+    def error_invalid_data_type_name(self, name, popup: SetupOptionPopup) -> None:
+        Messagebox().show_error(
+            title="Error", message=f"Invalid data type name {name}."
+        )
         popup.lift()
-        
-    def info_enter_a_path(self, popup:SetupOptionPopup) -> None:
+
+    def info_enter_a_path(self, popup: SetupOptionPopup) -> None:
         Messagebox.show_info(title="Info", message="Please enter a valid path.")
         popup.lift()
 
@@ -97,10 +116,15 @@ class View(tb.Window):
         Messagebox.show_info(title="Result", message=msg)
 
     def error_missing_target_path(self, category):
-        Messagebox().show_error(title="Error", message=f"Please enter a target path for {category} first or remove it from you setup")
- 
+        Messagebox().show_error(
+            title="Error",
+            message=f"Please enter a target path for {category} first or remove it from you setup",
+        )
+
     def display_results(self, label, amount, path) -> None:
-        ResultWidget(root=self.result_frame, label=label, amount=amount, path=path).pack(padx=5, pady=2, anchor="w")
+        ResultWidget(
+            root=self.result_frame, label=label, amount=amount, path=path
+        ).pack(padx=5, pady=2, anchor="w")
 
     ### static methods ###
 
