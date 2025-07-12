@@ -1,0 +1,54 @@
+{
+    "documents": [
+        "doc",
+        "pdf",
+        "docx",
+        "xlsx",
+        "md",
+        "html",
+        "rtf",
+        "odt",
+        "xls",
+        "htm",
+        "txt"
+    ],
+    "pictures": [
+        "psd",
+        "svg",
+        "tiff",
+        "png",
+        "bmp",
+        "jpeg",
+        "tif",
+        "gif",
+        "jpg"
+    ],
+    "videos": [
+        "mp4",
+        "mkv",
+        "webm",
+        "flv",
+        "avi",
+        "wmv",
+        "mov"
+    ],
+    "music": [
+        "ogg",
+        "wav",
+        "aif",
+        "aiff",
+        "mp3",
+        "aac",
+        "flac",
+        "wma"
+    ],
+    "executables": [
+        "jar",
+        "js",
+        "com",
+        "exe",
+        "msi",
+        "cmd",
+        "bat"
+    ]
+}
