@@ -1,0 +1,54 @@
+{
+    "Base-Path": {
+        "name": "Base-Path",
+        "endings": [],
+        "path": "C:/Users/matth/Downloads"
+    },
+    "videos": {
+        "name": "videos",
+        "endings": [
+            "mkv",
+            "mov",
+            "wmv",
+            "avi",
+            "mp4",
+            "flv",
+            "webm"
+        ],
+        "path": ""
+    },
+    "music": {
+        "name": "music",
+        "endings": [
+            "aif",
+            "wav",
+            "flac",
+            "aiff",
+            "wma",
+            "mp3",
+            "aac",
+            "ogg"
+        ],
+        "path": ""
+    },
+    "executables": {
+        "name": "executables",
+        "endings": [
+            "bat",
+            "com",
+            "msi",
+            "jar",
+            "cmd",
+            "exe",
+            "js"
+        ],
+        "path": ""
+    },
+    "test": {
+        "name": "test",
+        "endings": [
+            "webp"
+        ],
+        "path": ""
+    }
+}

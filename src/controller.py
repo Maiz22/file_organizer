@@ -2,7 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import os
 from model import DataType
-from crud.data_type import *
+from crud.data_type import (
+    db_get_all_data_types,
+    db_delete_all_data_types,
+    db_delete_data_type_by_name,
+    db_get_data_type_by_name,
+    db_insert_data_type,
+    db_update_data_type,
+)
 from default_data.data_formats import DEFAULT_DATA_FORMATS
 
 if TYPE_CHECKING:
@@ -45,30 +52,29 @@ class Controller:
         """
         Resets the path.json file to default (empty paths).
         """
-        delete_all_data_types()
-        insert_data_type(DataType(name="Base-Path"))
+        db_delete_all_data_types()
+        db_insert_data_type(DataType(name="Base-Path"))
         for key, val in DEFAULT_DATA_FORMATS.items():
-            insert_data_type(DataType(name=key, endings=list(val)))
+            db_insert_data_type(DataType(name=key, endings=list(val)))
 
     def check_load_default_data(self) -> None:
         """
         Get all elements from path.json and data_type.json.
         Creates DataType and DataSetup instance.
         """
-        data_types_json = get_all_data_types()
+        data_types_json = db_get_all_data_types()
         if not data_types_json:
             for name, endings in DEFAULT_DATA_FORMATS.items():
                 data_type = DataType(name=name, endings=endings)
-                insert_data_type(data_type=data_type)
+                db_insert_data_type(data_type=data_type)
 
     def update_all_setup_widgets(self) -> None:
         """
         Create all default path widgets.
         """
         self.create_base_widget()
-        data_types = get_all_data_types()
+        data_types = db_get_all_data_types()
         for data in data_types:
-            print(f"Creating setup widget for {data}")
             if data.name.lower() != "base-path":
                 self.create_setup_widget(data)
 
@@ -81,7 +87,9 @@ class Controller:
             label=data_type.name,
             directory=data_type.path,
             edit_callback=self.edit_data_type,
-            delete_callback=delete_data_type_by_name(data_type.name),
+            delete_callback=lambda event, name=data_type.name: db_delete_data_type_by_name(
+                name
+            ),
             cancel=True,
             tip=f"{data_type.endings}",
         )
@@ -103,8 +111,8 @@ class Controller:
             root=self.view.base_path_frame,
             label="Base-Path",
             directory=(
-                get_data_type_by_name("Base-Path").path
-                if get_data_type_by_name("Base-Path")
+                db_get_data_type_by_name("Base-Path").path
+                if db_get_data_type_by_name("Base-Path")
                 else ""
             ),
             edit_callback=self.edit_base_path,
@@ -121,12 +129,12 @@ class Controller:
         path = self.view.set_dir()
         if name.lower() != "base-path" or path == "":
             return "break"
-        data_type = get_data_type_by_name(name=name)
+        data_type = db_get_data_type_by_name(name=name)
         if not data_type:
             data_type = DataType(name=name)
-            insert_data_type(data_type)
+            db_insert_data_type(data_type)
         data_type.path = path
-        update_data_type(name=data_type.name, data_type=data_type)
+        db_update_data_type(name=data_type.name, data_type=data_type)
         self.update_base_view()
         return "break"
 
@@ -135,7 +143,7 @@ class Controller:
         Takes the name of a setup and opens a prefilled
         edit setup view.
         """
-        data_type = get_data_type_by_name(name)
+        data_type = db_get_data_type_by_name(name)
         if not data_type:
             print("No data type found for editing.")
             return "break"
@@ -157,20 +165,13 @@ class Controller:
         new_endings = edit_setup.file_format_entry.get()
         endings = new_endings.split(",")
         path = edit_setup.dir
-        update_data_type(
+        db_update_data_type(
             name=data_type.name,
             data_type=DataType(name=data_type.name, endings=endings, path=path),
         )
         if path is None or path == "":
             self.view.info_enter_a_path(edit_setup)
             raise ValueError("Path cannot be empty.")
-        # self.data_type_model.delete_element(name)
-        # self.data_type_model.insert_element(name, element=endings)
-        # self.path_model.delete_element(name)
-        # self.path_model.insert_element(name, element=path)
-        # self.remove_elements_from_temp_lists(name)
-        # self.data_types.append(data_type)
-        # self.data_setups.append(data_setup)
         self.reset_all_widgets()
         edit_setup.destroy()
 
@@ -191,20 +192,12 @@ class Controller:
         Validates the newly created data, adds it in to the temp data/setup lists
         and adds it to the DBs.
         """
-        data_type, data_setup = self.validate_new_data(new_option)
-        if data_type and data_setup:
-            self.data_type_model.insert_element(
-                name=data_type.name, element=list(data_type.endings)
-            )
-            self.path_model.insert_element(name=data_type.name, element=data_setup.path)
-            self.data_types.append(data_type)
-            self.data_setups.append(data_setup)
-            self.create_setup_widget(setup=data_setup)
+        data_type = self.validate_new_data(new_option)
+        if data_type:
+            self.create_setup_widget(data_type=data_type)
             new_option.destroy()
 
-    def validate_new_data(
-        self, new_option: SetupOptionPopup
-    ) -> tuple[DataType | DataSetup]:
+    def validate_new_data(self, new_option: SetupOptionPopup) -> DataType | None:
         """
         Validates data of te SetupOptionPopup and returns it
         if validation is successfull.
@@ -213,50 +206,27 @@ class Controller:
             ending for ending in new_option.file_format_entry.get().split(",")
         }
         name = new_option.name_entry.get()
+        if name.strip() == "":
+            self.view.error_invalid_data_type_name("''", new_option)
+            return None
+        if new_option.dir is None or new_option.dir.strip() == "":
+            self.view.info_enter_a_path(new_option)
+            return None
         try:
-            data_type = self.validate_data_type(name=name, endings=file_formats)
-        except ValueError:
-            self.view.error_invalid_data_type_name(f"'{name.lower()}'", new_option)
-            return None, None
-        try:
-            data_setup = self.validate_setup_path(
-                path=new_option.dir, data_type=data_type
+            new_data_type = db_insert_data_type(
+                data_type=DataType(name=name, endings=file_formats)
             )
         except ValueError:
-            self.view.info_enter_a_path(new_option)
-            return None, None
-        return (data_type, data_setup)
-
-    def validate_data_type(self, name: str, endings: str) -> DataType | None:
-        """
-        Check whether an element already exists in the DB.
-        """
-        for data in self.data_types:
-            if name == "" or data.name.lower() == name.lower():
-                raise ValueError("Datatype already exists.")
-        return DataType(name=name, endings=endings)
-
-    # def validate_setup_path(self, path: str, data_type: DataType) -> DataSetup | None:
-    #    """
-    #    Checks if a path has been added to a new setup.
-    #    """
-    #
-    #    return DataSetup(path=path, data_type=data_type)
-
-    def validate_base_path(self, name, path):
-        """
-        Checks if path is not emptry and base-path is selceted.
-        """
-        if name.lower() != "base-path" or path == "":
-            raise ValueError("Invalid base path!")
+            self.view.error_invalid_data_type_name(f"'{name.lower()}'", new_option)
+            return None
+        return new_data_type
 
     def analyze_data(self, event) -> None:
         """
         Analize the data in the cleanup path.
         """
-
         self.sorted_dict = self.create_sorting_dictionary()
-        path = get_data_type_by_name("Base-Path").path
+        path = db_get_data_type_by_name("Base-Path").path
         if path != "":
             files = os.listdir(path)
             for element in files:
@@ -266,7 +236,7 @@ class Controller:
         self.display_findings()
 
     def create_sorting_dictionary(self) -> dict:
-        all_data_types = get_all_data_types()
+        all_data_types = db_get_all_data_types()
         if not all_data_types:
             raise ValueError("No data types found in the database.")
         sort_dict = {"unknown": []}
@@ -280,12 +250,12 @@ class Controller:
         """
         check_move = False
         base_path = (
-            get_data_type_by_name("Base-Path").path
-            if get_data_type_by_name("Base-Path")
+            db_get_data_type_by_name("Base-Path").path
+            if db_get_data_type_by_name("Base-Path")
             else ""
         )
         self.view.destroy_child_widgets(self.view.result_frame)
-        for data in get_all_data_types():
+        for data in db_get_all_data_types():
             if self.sorted_dict[data.name]:
                 self.view.display_results(
                     label=data.name,
@@ -308,11 +278,14 @@ class Controller:
         on its data category.
         """
         total_moved, total_not_moved = 0, 0
-        base_path = self.get_path_from_setup(name="Base-Path")
+        base_path = db_get_data_type_by_name("Base-Path").path
+        if not base_path:
+            self.view.info_select_base_dir()
+            return
         for category, data in self.sorted_dict.items():
             if category != "unknown":
-                target_path = self.get_path_from_setup(name=category)
-                if target_path == "":
+                target_path = db_get_data_type_by_name(category).path
+                if not target_path:
                     self.view.error_missing_target_path(category)
                     return
                 else:
@@ -338,7 +311,7 @@ class Controller:
         the corresponding known/unknown data list.
         """
         name, endings = data, data.split(".")[-1]
-        data_types = get_all_data_types()
+        data_types = db_get_all_data_types()
         for data_type in data_types:
             if endings in data_type.endings:
                 self.sorted_dict[data_type.name].append(name)

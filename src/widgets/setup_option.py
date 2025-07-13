@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class SetupOptionPopup(tb.Toplevel):
-    def __init__(self, data_type: DataType) -> None:
+    def __init__(self, data_type: DataType = None) -> None:
         super().__init__()
         self.title("Setup Path")
         self.resizable(False, False)
