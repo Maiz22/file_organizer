@@ -60,15 +60,6 @@ class Controller:
             for name, endings in DEFAULT_DATA_FORMATS.items():
                 data_type = DataType(name=name, endings=endings)
                 insert_data_type(data_type=data_type)
-                # data_type_dir = DataTypePathConfig(data_type=data_type, path="")
-                # insert_data_type_dir(name=name, data_type=data_type_dir)
-
-    def get_path_from_data_type(self, name: str) -> str:
-        """
-        Takes a data type name as str and returns the corresponding
-        path from the setup.
-        """
-        return get_data_type_by_name(name).path if get_data_type_by_name(name) else ""
 
     def update_all_setup_widgets(self) -> None:
         """
@@ -78,7 +69,7 @@ class Controller:
         data_types = get_all_data_types()
         for data in data_types:
             print(f"Creating setup widget for {data}")
-            if data.name != "base-path":
+            if data.name.lower() != "base-path":
                 self.create_setup_widget(data)
 
     def create_setup_widget(self, data_type: DataType) -> None:
@@ -90,7 +81,7 @@ class Controller:
             label=data_type.name,
             directory=data_type.path,
             edit_callback=self.edit_data_type,
-            delete_callback=self.delete_setup,
+            delete_callback=delete_data_type_by_name(data_type.name),
             cancel=True,
             tip=f"{data_type.endings}",
         )
@@ -111,7 +102,11 @@ class Controller:
         self.view.create_select_path_widget(
             root=self.view.base_path_frame,
             label="Base-Path",
-            directory=self.get_path_from_data_type("Base-Path"),
+            directory=(
+                get_data_type_by_name("Base-Path").path
+                if get_data_type_by_name("Base-Path")
+                else ""
+            ),
             edit_callback=self.edit_base_path,
             delete_callback=None,
             cancel=False,
@@ -134,28 +129,6 @@ class Controller:
         update_data_type(name=data_type.name, data_type=data_type)
         self.update_base_view()
         return "break"
-        # self.remove_elements_from_temp_lists(name)
-
-    def delete_setup(self, event, name) -> None:
-        """
-        Removing setups (path and datatype) for their
-        corrseponding DBs.
-        """
-        self.remove_elements_from_temp_lists(name)
-        self.path_model.delete_element(name)
-        self.data_type_model.delete_element(name)
-
-    # def remove_elements_from_temp_lists(self, name) -> None:
-    #    """
-    #    Helper function removing element name from the
-    #    temp lists.
-    #    """
-    #    for i, setup in enumerate(self.data_setups):
-    #        if setup.data_type.name == name:
-    #            self.data_setups.pop(i)
-    #    for i, data_type in enumerate(self.data_types):
-    #        if data_type.name == name:
-    #            self.data_types.pop(i)
 
     def edit_data_type(self, event, name: str) -> None:
         """
@@ -283,7 +256,7 @@ class Controller:
         """
 
         self.sorted_dict = self.create_sorting_dictionary()
-        path = self.path_model.get_element("Base-Path")
+        path = get_data_type_by_name("Base-Path").path
         if path != "":
             files = os.listdir(path)
             for element in files:
@@ -293,8 +266,11 @@ class Controller:
         self.display_findings()
 
     def create_sorting_dictionary(self) -> dict:
+        all_data_types = get_all_data_types()
+        if not all_data_types:
+            raise ValueError("No data types found in the database.")
         sort_dict = {"unknown": []}
-        for data_type in self.data_types:
+        for data_type in all_data_types:
             sort_dict[data_type.name] = []
         return sort_dict
 
@@ -303,9 +279,13 @@ class Controller:
         Show all findings from the cleanup path.
         """
         check_move = False
-        base_path = self.get_path_from_setup(name="Base-Path")
+        base_path = (
+            get_data_type_by_name("Base-Path").path
+            if get_data_type_by_name("Base-Path")
+            else ""
+        )
         self.view.destroy_child_widgets(self.view.result_frame)
-        for data in self.data_types:
+        for data in get_all_data_types():
             if self.sorted_dict[data.name]:
                 self.view.display_results(
                     label=data.name,
@@ -358,7 +338,8 @@ class Controller:
         the corresponding known/unknown data list.
         """
         name, endings = data, data.split(".")[-1]
-        for data_type in self.data_types:
+        data_types = get_all_data_types()
+        for data_type in data_types:
             if endings in data_type.endings:
                 self.sorted_dict[data_type.name].append(name)
                 return

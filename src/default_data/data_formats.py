@@ -1,5 +1,5 @@
 DEFAULT_DATA_FORMATS = {
-    "Base-Path": {},
+    "Base-Path": {""},
     "documents": {
         "doc",
         "docx",
